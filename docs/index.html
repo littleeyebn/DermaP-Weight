@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <!-- Styles.html -------------------------------------------------------
+     ใช้ร่วมกันทั้ง LiffApp.html และ AdminApp.html ผ่าน
+     <?!= include('Styles'); ?> ใน <head>
+     - โหลด Tailwind ผ่าน CDN (config สีให้ตรงกับ design token เดิม)
+     - โหลดฟอนต์ Kanit / Anuphan
+     - คลาส component ที่ใช้ซ้ำ (.chip, .fchip, .act, .seg/.segbtn, .prow, .num)
+---------------------------------------------------------------------->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Anuphan:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: "#EFEBE5",
+          panel: "#FFFFFF",
+          ink: "#1E2E2B",
+          muted: "#8C938E",
+          line: "#E7E3DC",
+          teal: "#13837B",
+          tealSoft: "#C9E6E2",
+          coral: "#D9785F",
+          coralSoft: "#F2D9D1",
+          amber: "#C98A1E",
+          amberSoft: "#F3E4C4",
+          redSoft: "#F2D9D1",
+          greenSoft: "#D5E9D6",
+        },
+        fontFamily: {
+          kanit: ["Kanit", "sans-serif"],
+          anuphan: ["Anuphan", "sans-serif"],
+        },
+        borderRadius: {
+          xl2: "1.25rem",
+        },
+      },
+    },
+  };
+</script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { background: #EFEBE5; color: #1E2E2B; font-family: 'Anuphan', sans-serif; margin: 0; }
+
+  .num { font-family: 'Kanit', sans-serif; font-variant-numeric: tabular-nums; }
+
+  .chip {
+    font-family: 'Anuphan', sans-serif; font-size: 13.5px; font-weight: 500;
+    padding: 8px 15px; border-radius: 999px; border: 1px solid #E7E3DC;
+    background: #fff; color: #8C938E; cursor: pointer; white-space: nowrap; transition: all .18s;
+  }
+  .chip.on { background: #1E2E2B; color: #fff; border-color: #1E2E2B; }
+
+  .fchip {
+    font-size: 13.5px; font-weight: 500; padding: 7px 15px; border-radius: 999px;
+    border: 1px solid #E7E3DC; background: #fff; color: #8C938E; cursor: pointer; transition: all .15s;
+  }
+  .fchip.on { background: #1E2E2B; color: #fff; border-color: #1E2E2B; }
+
+  .act {
+    border: 1px solid #E7E3DC; background: #fff; border-radius: 9px; padding: 6px 12px;
+    font-family: 'Anuphan', sans-serif; font-size: 12.5px; cursor: pointer; color: #1E2E2B;
+  }
+  .act:hover { border-color: #13837B; color: #13837B; }
+
+  .cta:active { transform: scale(.985); }
+
+  .seg { display: inline-flex; background: #fff; border: 1px solid #E7E3DC; border-radius: 999px; padding: 4px; gap: 4px; }
+  .segbtn {
+    border: none; background: transparent; font-family: 'Kanit', sans-serif; font-size: 14px;
+    font-weight: 500; padding: 8px 18px; border-radius: 999px; cursor: pointer; color: #8C938E; transition: all .18s;
+  }
+  .segbtn.on { background: #13837B; color: #fff; }
+
+  .prow { cursor: pointer; transition: background .12s; }
+  .prow:hover { background: #FAF8F4; }
+  .prow.sel { background: #C9E6E233; box-shadow: inset 3px 0 0 #13837B; }
+
+  input, select, textarea { font-family: 'Anuphan', sans-serif; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+
+</head>
+<body class="bg-bg">
+<div class="max-w-md mx-auto min-h-screen px-4 py-6">
+
+  <div class="text-center mb-6">
+    <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-ink text-white font-kanit text-xl">D</div>
+    <div class="mt-2 font-kanit text-lg">DERMA P CLINIC</div>
+    <div class="text-xs text-muted">ระบบติดตามผลโปรแกรมลดน้ำหนัก</div>
+  </div>
+
+  <div id="view-loading" class="view text-center text-sm text-muted py-10"><span id="loading-text">กำลังโหลด...</span></div>
+
+  <div id="view-error" class="view hidden rounded-xl2 border border-line bg-white p-4 text-sm text-coral"></div>
+
+  <div id="view-pending" class="view hidden rounded-xl2 border border-line bg-white p-5 text-center">
+    <div class="text-3xl mb-2">⏳</div>
+    <div class="font-kanit text-base mb-1">รอเจ้าหน้าที่ผูกบัญชี</div>
+    <p class="text-sm text-muted leading-relaxed">
+      บัญชี LINE ของคุณยังไม่ได้เชื่อมกับประวัติคนไข้ในคลินิก
+      กรุณาแจ้งเจ้าหน้าที่ที่เคาน์เตอร์เพื่อทำการผูกบัญชี (ใช้เลข HN จากบัตรคิว)
+    </p>
+  </div>
+
+  <!-- ===================== เมนูหลัก ===================== -->
+  <div id="view-menu" class="view hidden">
+    <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+      <div class="text-xs text-muted">คนไข้</div>
+      <div class="font-kanit text-base" id="patient-name">—</div>
+      <div class="text-xs text-muted num" id="patient-hn">—</div>
+    </div>
+    <div class="space-y-3">
+      <div onclick="showView('record')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">📷</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">บันทึกผลวันนี้</div><div class="text-xs text-muted mt-0.5">ชั่งน้ำหนัก / ถ่ายรูปผล BIA</div></div>
+        <div class="text-muted">›</div>
+      </div>
+      <div onclick="showView('symptoms')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">🩺</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">บันทึกอาการข้างเคียง</div><div class="text-xs text-muted mt-0.5">เช็คอาการที่พบช่วงนี้</div></div>
+        <div class="text-muted">›</div>
+      </div>
+      <div onclick="showView('progress')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">📈</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">ความคืบหน้าของฉัน</div><div class="text-xs text-muted mt-0.5">กราฟน้ำหนัก/องค์ประกอบร่างกาย</div></div>
+        <div class="text-muted">›</div>
+      </div>
+      <div onclick="showView('screening')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">📋</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">แบบประเมินก่อนเริ่มยา</div><div class="text-xs text-muted mt-0.5">กรอกครั้งแรกก่อนเริ่มโปรแกรม</div></div>
+        <div class="text-muted">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== บันทึกผลวันนี้ ===================== -->
+  <div id="view-record" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div class="mb-4">
+      <div class="font-kanit text-lg">บันทึกผลวันนี้</div>
+      <div class="text-xs text-muted">กรอกข้อมูลผลตรวจของวันนี้</div>
+    </div>
+
+    <!-- ฟีเจอร์ "ถ่ายรูปผล BIA" (อ่านค่าด้วย AI) ปิดใช้งานชั่วคราว เหลือไว้ให้กรอกเองอย่างเดียว
+         โค้ดเดิมยังอยู่ครบด้านล่าง (ซ่อนด้วย class="hidden") ถ้าต้องการเปิดกลับมาใช้
+         ให้เอา class="hidden" ออกจาก #record-seg และ #record-capture-photo แล้วเปลี่ยน
+         initRecordView() ให้เรียก recordSetTab('photo') แทน startManual() -->
+    <div id="record-seg" class="seg mb-4 hidden">
+      <button class="segbtn on" id="record-tab-photo" onclick="recordSetTab('photo')">ถ่ายรูปผล BIA</button>
+      <button class="segbtn" id="record-tab-manual" onclick="recordSetTab('manual')">กรอกข้อมูลเอง</button>
+    </div>
+
+    <div id="record-capture-photo" class="hidden rounded-xl2 border border-line bg-white p-5 text-center">
+      <div class="text-3xl mb-2">📷</div>
+      <p class="text-sm text-muted mb-4 leading-relaxed">ถ่ายรูปจอเครื่อง BIA หรือใบผลตรวจให้ชัด ระบบจะอ่านค่าให้อัตโนมัติ แล้วให้คุณตรวจ/แก้ไขก่อนบันทึกเสมอ</p>
+      <input type="file" accept="image/*" capture="environment" class="hidden" id="bia-photo" onchange="handlePhoto(event)">
+      <label for="bia-photo" class="cta inline-block rounded-xl border-none bg-teal px-6 py-3 font-kanit text-[15px] text-white cursor-pointer" id="bia-photo-label">เลือก/ถ่ายรูป</label>
+      <div class="mt-3 text-xs text-coral hidden" id="record-ocr-error"></div>
+    </div>
+
+    <div id="record-capture-manual" class="hidden rounded-xl2 border border-line bg-white p-5 text-center">
+      <div class="text-3xl mb-2">✍️</div>
+      <p class="text-sm text-muted mb-4 leading-relaxed">กรอกค่าน้ำหนักหรือผลตรวจด้วยตัวเอง — ฟิลด์ใดไม่มีข้อมูลเว้นว่างได้</p>
+      <button onclick="startManual()" class="cta rounded-xl border-none bg-teal px-6 py-3 font-kanit text-[15px] text-white">เริ่มกรอกข้อมูล</button>
+    </div>
+
+    <div id="record-confirm" class="hidden rounded-xl2 border border-line bg-white p-5">
+      <div id="record-ocr-info" class="hidden mb-4 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="fchip on" style="cursor:default">อ่านจากรูป AI</span>
+          <span class="text-xs text-muted" id="record-confidence"></span>
+        </div>
+        <div id="record-low-confidence" class="hidden rounded-lg bg-amberSoft px-3 py-2 text-xs text-amber">⚠️ ความมั่นใจค่อนข้างต่ำ กรุณาตรวจค่าด้านล่างให้ตรงกับผลจริงก่อนบันทึก</div>
+        <div id="record-sanity-flag" class="hidden rounded-lg bg-coralSoft px-3 py-2 text-xs text-coral">⚠️ ค่าบางตัวอยู่นอกช่วงปกติ กรุณาตรวจสอบอีกครั้งก่อนบันทึก</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="text-xs font-medium text-muted">วันที่บันทึกผล</label>
+        <input type="date" id="record-measured-at" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3" id="record-fields"></div>
+
+      <div class="mt-3 text-xs text-coral hidden" id="record-save-error"></div>
+
+      <div class="mt-5 flex gap-2">
+        <button onclick="recordBackToCapture()" class="act flex-1 rounded-xl py-2.5 text-sm">ย้อนกลับ</button>
+        <button onclick="handleSaveMeasurement()" id="record-save-btn" class="cta flex-1 rounded-xl border-none bg-teal py-2.5 text-sm font-kanit text-white">ยืนยันและบันทึก</button>
+      </div>
+    </div>
+
+    <div id="record-done" class="hidden rounded-xl2 border border-line bg-white p-6 text-center">
+      <div class="text-3xl mb-2">✅</div>
+      <div class="font-kanit text-base mb-1">บันทึกผลแล้ว</div>
+      <p class="text-sm text-muted mb-4">ขอบคุณที่บันทึกผลอย่างสม่ำเสมอนะคะ</p>
+      <button onclick="recordReset()" class="act rounded-xl px-5 py-2.5 text-sm">บันทึกอีกครั้ง</button>
+    </div>
+  </div>
+
+  <!-- ===================== แบบประเมินก่อนเริ่มยา ===================== -->
+  <div id="view-screening" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div id="screening-form">
+      <div class="mb-4">
+        <div class="font-kanit text-lg">แบบประเมินก่อนเริ่มยา</div>
+        <div class="text-xs text-muted">กรอกข้อมูลให้ครบเพื่อให้แพทย์ตรวจสอบก่อนเริ่มโปรแกรม</div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="font-kanit text-[14.5px] mb-2">ข้อมูลพื้นฐาน</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-xs font-medium text-muted">น้ำหนักตั้งต้น (kg)</label>
+            <input type="number" inputmode="decimal" id="scr-weight" oninput="updateBmiPreview()" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>
+          <div><label class="text-xs font-medium text-muted">ส่วนสูง (cm)</label>
+            <input type="number" inputmode="decimal" id="scr-height" oninput="updateBmiPreview()" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>
+          <div class="col-span-2"><label class="text-xs font-medium text-muted">น้ำหนักเป้าหมาย (kg)</label>
+            <input type="number" inputmode="decimal" id="scr-target" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>
+        </div>
+        <div class="mt-2 text-xs text-muted hidden" id="scr-bmi-row">BMI ประมาณ <span class="num font-medium text-ink" id="scr-bmi"></span></div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="font-kanit text-[14.5px] mb-1">ข้อห้ามใช้ยา (ถ้ามี)</div>
+        <div class="text-xs text-muted mb-2">เลือกถ้าเคยมีหรือสงสัยว่ามีภาวะดังนี้</div>
+        <div class="flex flex-wrap gap-2" id="scr-contra"></div>
+        <div class="mt-2 rounded-lg bg-amberSoft px-3 py-2 text-xs text-amber hidden" id="scr-contra-warn">⚠️ แพทย์จะตรวจสอบรายการนี้เป็นพิเศษก่อนอนุมัติ</div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="font-kanit text-[14.5px] mb-1">โรคประจำตัว</div>
+        <div class="flex flex-wrap gap-2" id="scr-conditions"></div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <label class="text-xs font-medium text-muted">ยาที่ใช้ประจำ</label>
+        <textarea id="scr-medications" rows="2" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></textarea>
+        <label class="mt-3 block text-xs font-medium text-muted">ประวัติการแพ้ยา/อาหาร</label>
+        <textarea id="scr-allergy" rows="2" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></textarea>
+      </div>
+
+      <div class="mb-3 text-xs text-coral hidden" id="scr-error"></div>
+      <button onclick="submitScreening()" id="scr-submit" class="cta w-full rounded-xl border-none bg-teal py-3 font-kanit text-[15px] text-white disabled:opacity-50" disabled>ส่งแบบประเมิน</button>
+    </div>
+
+    <div id="screening-done" class="hidden text-center py-10">
+      <div class="text-3xl mb-2">📋</div>
+      <div class="font-kanit text-base mb-1">ส่งแบบประเมินแล้ว</div>
+      <p class="text-sm text-muted leading-relaxed">แพทย์จะตรวจสอบข้อมูลของคุณก่อนเริ่มโปรแกรม หากมีข้อสงสัยเจ้าหน้าที่จะติดต่อกลับนะคะ</p>
+    </div>
+  </div>
+
+  <!-- ===================== บันทึกอาการข้างเคียง ===================== -->
+  <div id="view-symptoms" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div id="symptoms-form">
+      <div class="mb-4">
+        <div class="font-kanit text-lg">บันทึกอาการข้างเคียง</div>
+        <div class="text-xs text-muted">เลือกอาการที่พบ แล้วระบุระดับความรุนแรง</div>
+      </div>
+      <div class="space-y-2" id="symptoms-list"></div>
+      <div class="mt-4">
+        <label class="text-xs font-medium text-muted">อาการอื่นๆ (ถ้ามี)</label>
+        <textarea id="sym-other" rows="3" placeholder="พิมพ์อาการอื่นที่ไม่อยู่ในรายการ..." oninput="renderSymptomSubmitState()" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></textarea>
+      </div>
+      <div id="sym-redflag-warn" class="mt-3 rounded-lg bg-coralSoft px-3 py-2 text-xs text-coral hidden">⚠️ อาการที่คุณเลือกจะถูกส่งแจ้งเจ้าหน้าที่คลินิกทันที</div>
+      <div id="sym-error" class="mt-3 text-xs text-coral hidden"></div>
+      <button onclick="submitSymptoms()" id="sym-submit" class="cta mt-5 w-full rounded-xl border-none bg-teal py-3 font-kanit text-[15px] text-white disabled:opacity-50" disabled>บันทึกอาการ</button>
+    </div>
+    <div id="symptoms-done" class="hidden text-center py-10">
+      <div class="text-3xl mb-2">✅</div>
+      <div class="font-kanit text-base mb-1">บันทึกอาการแล้ว</div>
+      <p class="text-sm leading-relaxed" id="symptoms-done-msg"></p>
+    </div>
+  </div>
+
+  <!-- ===================== ความคืบหน้าของฉัน ===================== -->
+  <div id="view-progress" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div class="mb-4">
+      <div class="font-kanit text-lg">ความคืบหน้าของฉัน</div>
+      <div class="text-xs text-muted num" id="prog-hn"></div>
+    </div>
+
+    <div id="prog-loading" class="text-center text-sm text-muted py-10">กำลังโหลด...</div>
+
+    <div id="prog-content" class="hidden">
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="flex items-end gap-4">
+          <div>
+            <div class="text-xs text-muted">น้ำหนักปัจจุบัน</div>
+            <div class="num font-kanit text-3xl"><span id="prog-current">—</span><span class="text-sm text-muted ml-1">kg</span></div>
+          </div>
+          <div class="pb-1 hidden" id="prog-lost-wrap">
+            <div class="text-xs text-muted">ลดไปแล้ว</div>
+            <div class="num text-lg text-teal" id="prog-lost"></div>
+          </div>
+        </div>
+        <div class="mt-2 text-xs text-muted hidden" id="prog-target-row">เป้าหมาย: <span class="num" id="prog-target"></span> kg</div>
+        <div class="mt-1 text-xs text-muted hidden" id="prog-dose-row"></div>
+      </div>
+
+      <div class="flex gap-2 mb-3 overflow-x-auto" id="prog-metric-chips"></div>
+
+      <div class="rounded-xl2 border border-line bg-white p-3 mb-4 relative" style="height:220px">
+        <canvas id="prog-chart"></canvas>
+        <div id="prog-empty" class="hidden absolute inset-0 flex items-center justify-center text-sm text-muted">ยังไม่มีข้อมูล</div>
+      </div>
+      <div class="mb-4 flex items-center gap-3 text-[11px] text-muted">
+        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-teal inline-block"></span> กรอกเอง</span>
+        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-coral inline-block"></span> อ่านจากรูป AI</span>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 hidden" id="prog-body-measures">
+        <div class="font-kanit text-[14.5px] mb-2">สัดส่วนที่เปลี่ยนไป</div>
+        <div class="space-y-2" id="prog-body-measures-list"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  var LIFF_ID = "PUT_YOUR_LIFF_ID_HERE";  // <<< ใส่ LIFF ID ของคุณตรงนี้
+  var CONTRA = [
+  { k: "mtc", label: "มะเร็งไทรอยด์ (ตนเอง/ครอบครัว)" },
+  { k: "men2", label: "เนื้องอกต่อมไร้ท่อ MEN2" },
+  { k: "pancreatitis", label: "เคยเป็นตับอ่อนอักเสบ" },
+  { k: "pregnant", label: "ตั้งครรภ์ / ให้นมบุตร" },
+  { k: "allergyGLP", label: "แพ้ยาลดน้ำหนักกลุ่มนี้" },
+];
+  var CONDITIONS = [
+  "เบาหวาน", "โรคไต", "โรคตับ", "นิ่ว/โรคถุงน้ำดี",
+  "โรคทางเดินอาหาร", "ประวัติการกินผิดปกติ", "โรคหัวใจ", "ไทรอยด์ผิดปกติ",
+];
+  var SEV = {
+  low: { label: "น้อย", fg: "#2E6B3A", bg: "#D5E9D6" },
+  mid: { label: "ปานกลาง", fg: "#C98A1E", bg: "#F3E4C4" },
+  high: { label: "มาก", fg: "#B0452F", bg: "#F2D9D1" },
+};
+
+
+  // ===================== Apps Script bridge (GitHub Pages) =====================
+  // ปลายทาง Apps Script web app (/exec) — ใส่ URL ของคุณตรงนี้
+  var GAS_ENDPOINT = "PUT_YOUR_APPS_SCRIPT_EXEC_URL_HERE";
+
+  // จำลอง gasRun() API เดิม ให้เรียกผ่าน fetch ไป doPost แทน
+  // ใช้ text/plain เพื่อเลี่ยง CORS preflight (Apps Script ไม่ตอบ OPTIONS)
+  function gasRun() {
+    var successCb = null, failureCb = null;
+    var api = {
+      withSuccessHandler: function (fn) { successCb = fn; return api; },
+      withFailureHandler: function (fn) { failureCb = fn; return api; }
+    };
+    // สร้าง method ตามรายชื่อ action ที่ server รองรับ
+    var ACTIONS = ["liffGetSymptomCatalog","liffCheckSession","liffGetProgress",
+      "liffSubmitScreening","liffReadBiaPhoto","liffSaveMeasurement","liffSubmitSymptoms"];
+    ACTIONS.forEach(function (name) {
+      api[name] = function () {
+        var args = Array.prototype.slice.call(arguments);
+        fetch(GAS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: name, args: args })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res.ok) { if (successCb) successCb(res.data); }
+          else { if (failureCb) failureCb(new Error(res.error)); }
+        })
+        .catch(function (e) { if (failureCb) failureCb(e); });
+      };
+    });
+    return api;
+  }
+  // หมายเหตุ: ทุกครั้งที่เรียก gasRun() จะสร้าง instance ใหม่ มี callback แยกของตัวเอง
+
+  var idToken = null;
+  var TH_MONTH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  function fmtDate(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.getDate() + " " + TH_MONTH[d.getMonth()];
+  }
+  function todayIso() {
+    var d = new Date();
+    var m = ("0" + (d.getMonth()+1)).slice(-2);
+    var day = ("0" + d.getDate()).slice(-2);
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  // ===================== view switching =====================
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(function (el) { el.classList.add('hidden'); });
+    var el = document.getElementById('view-' + name);
+    if (el) el.classList.remove('hidden');
+    if (name === 'progress') loadProgress();
+    if (name === 'symptoms') initSymptomsView();
+    if (name === 'screening') initScreeningView();
+    if (name === 'record') recordReset();
+  }
+  function showError(msg) {
+    document.getElementById('view-error').textContent = msg;
+    showView('error');
+  }
+
+  // ===================== init / session =====================
+  function dbg(t) { var el = document.getElementById('loading-text'); if (el) el.textContent = t; }
+
+  // timeout 15 วิ กรณี liff.init ค้างเงียบๆ
+  var initTimeout = setTimeout(function () {
+    showError("โหลดนานเกินไป — กรุณาเปิดลิงก์นี้ผ่านแอป LINE โดยตรง หรือติดต่อเจ้าหน้าที่คลินิก");
+  }, 15000);
+
+  runLiff();
+
+  function runLiff() {
+  dbg("เริ่ม init...");
+  liff.init({ liffId: LIFF_ID }).then(function () {
+    clearTimeout(initTimeout);
+    dbg("init สำเร็จ, เช็ค login...");
+    if (!liff.isLoggedIn()) { dbg("ยังไม่ login, redirect..."); liff.login(); return; }
+    dbg("login แล้ว, ดึง idToken...");
+    idToken = liff.getIDToken();
+    if (!idToken) { showError("ไม่สามารถดึง idToken ได้ — ตรวจสอบว่า LIFF scope มี openid ครบ"); return; }
+    dbg("ได้ idToken, เช็ค session กับ server...");
+    gasRun()
+      .withSuccessHandler(onSession)
+      .withFailureHandler(function (e) { showError("Server error: " + (e && e.message ? e.message : e)); })
+      .liffCheckSession(idToken);
+  }).catch(function (e) {
+    clearTimeout(initTimeout);
+    showError("LIFF init error: " + (e && e.code ? e.code + " — " : "") + (e && e.message ? e.message : e));
+  });
+  } // end runLiff
+
+  function onSession(data) {
+    if (data.linked) {
+      document.getElementById('patient-name').textContent = data.patient.name;
+      document.getElementById('patient-hn').textContent = data.patient.hn;
+      showView('menu');
+    } else {
+      showView('pending');
+    }
+  }
+
+  // ===================== บันทึกผลวันนี้ (record) =====================
+  var FIELD_LABELS = [
+    { key: 'weight_kg', label: 'น้ำหนัก', unit: 'kg' },
+    { key: 'bmi', label: 'BMI', unit: '' },
+    { key: 'body_fat_percent', label: 'เปอร์เซ็นต์ไขมัน', unit: '%' },
+    { key: 'fat_mass_kg', label: 'มวลไขมัน', unit: 'kg' },
+    { key: 'muscle_mass_kg', label: 'มวลกล้ามเนื้อ', unit: 'kg' },
+    { key: 'total_body_water_kg', label: 'น้ำในร่างกาย', unit: 'kg' },
+    { key: 'visceral_fat_level', label: 'ไขมันช่องท้อง (ระดับ)', unit: '' },
+  ];
+  var recordState = { source: 'manual', confidence: null, sanityFlag: false, deviceModel: null, ocrNotes: null };
+
+  function recordSetTab(tab) {
+    document.getElementById('record-tab-photo').classList.toggle('on', tab === 'photo');
+    document.getElementById('record-tab-manual').classList.toggle('on', tab === 'manual');
+    document.getElementById('record-capture-photo').classList.toggle('hidden', tab !== 'photo');
+    document.getElementById('record-capture-manual').classList.toggle('hidden', tab !== 'manual');
+  }
+
+  function recordReset() {
+    // ฟีเจอร์ถ่ายรูป BIA ปิดใช้งานชั่วคราว — เริ่มต้นที่โหมดกรอกเองเสมอ
+    // (เดิมเริ่มที่แท็บ 'photo' และเปิด #record-seg / #record-capture-photo กลับมา
+    // ถ้าจะเปิดฟีเจอร์ถ่ายรูปกลับมาใช้ ให้คืนโค้ดบรรทัดที่ comment ไว้ด้านล่าง)
+    recordState = { source: 'manual', confidence: null, sanityFlag: false, deviceModel: null, ocrNotes: null };
+    // document.getElementById('record-seg').classList.remove('hidden');
+    // document.getElementById('record-capture-photo').classList.remove('hidden');
+    document.getElementById('record-capture-manual').classList.remove('hidden');
+    document.getElementById('record-confirm').classList.add('hidden');
+    document.getElementById('record-done').classList.add('hidden');
+    document.getElementById('record-ocr-error').classList.add('hidden');
+    document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป';
+    recordSetTab('manual');
+  }
+
+  function recordBackToCapture() {
+    // document.getElementById('record-seg').classList.remove('hidden');
+    document.getElementById('record-confirm').classList.add('hidden');
+    recordSetTab(recordState.source === 'bia_ocr' ? 'photo' : 'manual');
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = reader.result;
+        resolve({ base64: result.split(',')[1], mediaType: file.type || 'image/jpeg' });
+      };
+      reader.onerror = function () { reject(new Error('อ่านไฟล์รูปไม่สำเร็จ')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handlePhoto(ev) {
+    var file = ev.target.files && ev.target.files[0];
+    var input = ev.target;
+    if (!file || !idToken) return;
+    document.getElementById('bia-photo-label').textContent = 'กำลังอ่านผล...';
+    document.getElementById('record-ocr-error').classList.add('hidden');
+
+    fileToBase64(file).then(function (r) {
+      gasRun()
+        .withSuccessHandler(function (data) { onBiaResult(data); input.value = ''; document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป'; })
+        .withFailureHandler(function (e) { showOcrError(e.message); input.value = ''; document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป'; })
+        .liffReadBiaPhoto(idToken, r.base64, r.mediaType);
+    }).catch(function (e) { showOcrError(e.message); input.value = ''; document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป'; });
+  }
+
+  function showOcrError(msg) {
+    var el = document.getElementById('record-ocr-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  function onBiaResult(data) {
+    if (!data.readable) {
+      showOcrError(data.notes || 'ระบบอ่านผลภาพไม่สำเร็จ กรุณากรอกข้อมูลเอง');
+      recordSetTab('manual');
+      startManual();
+      return;
+    }
+    recordState.source = 'bia_ocr';
+    recordState.confidence = data.overall_confidence != null ? data.overall_confidence : null;
+    recordState.sanityFlag = !!data.sanity_flag;
+    recordState.deviceModel = data.device_model || null;
+    recordState.ocrNotes = data.notes || null;
+    openConfirm(data.values || {}, data.measured_at || todayIso());
+  }
+
+  function startManual() {
+    recordState = { source: 'manual', confidence: null, sanityFlag: false, deviceModel: null, ocrNotes: null };
+    openConfirm({}, todayIso());
+  }
+
+  function openConfirm(values, measuredAt) {
+    document.getElementById('record-seg').classList.add('hidden');
+    document.getElementById('record-capture-photo').classList.add('hidden');
+    document.getElementById('record-capture-manual').classList.add('hidden');
+    document.getElementById('record-confirm').classList.remove('hidden');
+    document.getElementById('record-measured-at').value = measuredAt;
+
+    var fieldsHtml = '';
+    FIELD_LABELS.forEach(function (f) {
+      var v = values[f.key];
+      fieldsHtml += '<div><label class="text-xs font-medium text-muted">' + f.label + (f.unit ? ' <span class="text-muted">(' + f.unit + ')</span>' : '') + '</label>'
+        + '<input type="number" inputmode="decimal" step="0.1" id="field-' + f.key + '" placeholder="—" value="' + (v != null ? v : '') + '" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>';
+    });
+    document.getElementById('record-fields').innerHTML = fieldsHtml;
+
+    var ocrInfo = document.getElementById('record-ocr-info');
+    if (recordState.source === 'bia_ocr') {
+      ocrInfo.classList.remove('hidden');
+      var conf = recordState.confidence;
+      document.getElementById('record-confidence').textContent = conf != null ? ('ความมั่นใจ ' + Math.round(conf * 100) + '%') : '';
+      document.getElementById('record-low-confidence').classList.toggle('hidden', !(conf != null && conf < 0.7));
+      document.getElementById('record-sanity-flag').classList.toggle('hidden', !recordState.sanityFlag);
+    } else {
+      ocrInfo.classList.add('hidden');
+    }
+    document.getElementById('record-save-error').classList.add('hidden');
+  }
+
+  function handleSaveMeasurement() {
+    var btn = document.getElementById('record-save-btn');
+    var errEl = document.getElementById('record-save-error');
+    errEl.classList.add('hidden');
+    var payload = { measured_at: document.getElementById('record-measured-at').value, source: recordState.source, confidence: recordState.source === 'bia_ocr' ? recordState.confidence : null, device_model: recordState.deviceModel, notes: recordState.ocrNotes };
+    FIELD_LABELS.forEach(function (f) {
+      var raw = document.getElementById('field-' + f.key).value;
+      payload[f.key] = raw === '' ? null : Number(raw);
+    });
+    btn.textContent = 'กำลังบันทึก...';
+    btn.disabled = true;
+    gasRun()
+      .withSuccessHandler(function () {
+        document.getElementById('record-confirm').classList.add('hidden');
+        document.getElementById('record-done').classList.remove('hidden');
+        btn.textContent = 'ยืนยันและบันทึก';
+        btn.disabled = false;
+      })
+      .withFailureHandler(function (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+        btn.textContent = 'ยืนยันและบันทึก';
+        btn.disabled = false;
+      })
+      .liffSaveMeasurement(idToken, payload);
+  }
+
+  // ===================== แบบประเมินก่อนเริ่มยา (screening) =====================
+  var scrContra = {};
+  var scrConditions = {};
+  var screeningInited = false;
+
+  function initScreeningView() {
+    if (screeningInited) return;
+    screeningInited = true;
+    document.getElementById('scr-contra').innerHTML = CONTRA.map(function (c) {
+      return '<button onclick="toggleChip(scrContra,\'' + c.k + '\',\'scr-contra\')" class="fchip" data-key="' + c.k + '" id="scr-contra-' + c.k + '">' + c.label + '</button>';
+    }).join('');
+    document.getElementById('scr-conditions').innerHTML = CONDITIONS.map(function (c, i) {
+      return '<button onclick="toggleChip(scrConditions,\'' + i + '\',\'scr-conditions\')" class="fchip" data-key="' + i + '" id="scr-cond-' + i + '">' + c + '</button>';
+    }).join('');
+    var wEl = document.getElementById('scr-weight'), hEl = document.getElementById('scr-height');
+    [wEl, hEl].forEach(function (el) { el.addEventListener('input', updateScreeningSubmitState); });
+  }
+
+  function toggleChip(state, key, groupPrefix) {
+    if (state[key]) delete state[key]; else state[key] = true;
+    var id = groupPrefix === 'scr-contra' ? 'scr-contra-' + key : 'scr-cond-' + key;
+    document.getElementById(id).classList.toggle('on', !!state[key]);
+    if (groupPrefix === 'scr-contra') {
+      document.getElementById('scr-contra-warn').classList.toggle('hidden', Object.keys(scrContra).length === 0);
+    }
+  }
+
+  function updateBmiPreview() {
+    var w = Number(document.getElementById('scr-weight').value);
+    var h = Number(document.getElementById('scr-height').value);
+    var row = document.getElementById('scr-bmi-row');
+    if (w > 0 && h > 0) {
+      var hm = h / 100;
+      row.classList.remove('hidden');
+      document.getElementById('scr-bmi').textContent = (w / (hm * hm)).toFixed(1);
+    } else {
+      row.classList.add('hidden');
+    }
+    updateScreeningSubmitState();
+  }
+
+  function updateScreeningSubmitState() {
+    var w = document.getElementById('scr-weight').value;
+    var h = document.getElementById('scr-height').value;
+    document.getElementById('scr-submit').disabled = !(w && h);
+  }
+
+  function submitScreening() {
+    var errEl = document.getElementById('scr-error');
+    errEl.classList.add('hidden');
+    var btn = document.getElementById('scr-submit');
+    var payload = {
+      baseline_weight_kg: document.getElementById('scr-weight').value ? Number(document.getElementById('scr-weight').value) : null,
+      height_cm: document.getElementById('scr-height').value ? Number(document.getElementById('scr-height').value) : null,
+      target_weight_kg: document.getElementById('scr-target').value ? Number(document.getElementById('scr-target').value) : null,
+      contraindications: CONTRA.filter(function (c) { return scrContra[c.k]; }).map(function (c) { return c.k; }),
+      conditions: CONDITIONS.filter(function (c, i) { return scrConditions[i]; }),
+      medications: document.getElementById('scr-medications').value || null,
+      allergy_history: document.getElementById('scr-allergy').value || null,
+    };
+    btn.disabled = true;
+    btn.textContent = 'กำลังส่ง...';
+    gasRun()
+      .withSuccessHandler(function () {
+        document.getElementById('screening-form').classList.add('hidden');
+        document.getElementById('screening-done').classList.remove('hidden');
+      })
+      .withFailureHandler(function (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'ส่งแบบประเมิน';
+      })
+      .liffSubmitScreening(idToken, payload);
+  }
+
+  // ===================== บันทึกอาการข้างเคียง (symptoms) =====================
+  var SYMPTOMS = null;
+  var symptomState = {};
+
+  function initSymptomsView() {
+    if (SYMPTOMS) { renderSymptoms(); return; }
+    gasRun().withSuccessHandler(function (data) {
+      SYMPTOMS = data;
+      renderSymptoms();
+    }).withFailureHandler(function (e) { showError(e.message); }).liffGetSymptomCatalog();
+  }
+
+  function renderSymptoms() {
+    var html = '';
+    SYMPTOMS.forEach(function (s) {
+      html += '<div class="rounded-xl2 border bg-white p-3 transition-colors" id="sym-row-' + s.key + '" style="border-color:#E7E3DC">'
+        + '<div class="flex items-center justify-between">'
+        + '<button onclick="toggleSymptom(\'' + s.key + '\')" class="flex items-center gap-2 text-left">'
+        + '<span class="flex h-5 w-5 items-center justify-center rounded-full border text-xs" id="sym-check-' + s.key + '" style="border-color:#E7E3DC;background:#fff;color:#fff"></span>'
+        + '<span class="text-[14.5px]">' + s.label_th + '</span>'
+        + (s.red_flag ? '<span class="text-xs text-coral">(แจ้งคลินิกทันทีถ้าเลือก)</span>' : '')
+        + '</button></div>'
+        + '<div class="mt-2 hidden gap-2 flex" id="sym-sevwrap-' + s.key + '">'
+        + ['low', 'mid', 'high'].map(function (lvl) {
+            return '<button onclick="setSeverity(\'' + s.key + '\',\'' + lvl + '\')" class="fchip" id="sym-sev-' + s.key + '-' + lvl + '">' + SEV[lvl].label + '</button>';
+          }).join('')
+        + '</div></div>';
+    });
+    document.getElementById('symptoms-list').innerHTML = html;
+  }
+
+  function toggleSymptom(key) {
+    if (symptomState[key]) { delete symptomState[key]; } else { symptomState[key] = 'mid'; }
+    var row = document.getElementById('sym-row-' + key);
+    var check = document.getElementById('sym-check-' + key);
+    var sevWrap = document.getElementById('sym-sevwrap-' + key);
+    var on = !!symptomState[key];
+    row.style.borderColor = on ? '#13837B' : '#E7E3DC';
+    check.style.borderColor = on ? '#13837B' : '#E7E3DC';
+    check.style.background = on ? '#13837B' : '#fff';
+    check.textContent = on ? '✓' : '';
+    sevWrap.classList.toggle('hidden', !on);
+    if (on) setSeverity(key, 'mid');
+    renderSymptomSubmitState();
+  }
+
+  function setSeverity(key, lvl) {
+    symptomState[key] = lvl;
+    ['low', 'mid', 'high'].forEach(function (l) {
+      var el = document.getElementById('sym-sev-' + key + '-' + l);
+      if (l === lvl) {
+        el.style.background = SEV[l].bg; el.style.color = SEV[l].fg; el.style.borderColor = SEV[l].fg;
+      } else {
+        el.style.background = ''; el.style.color = ''; el.style.borderColor = '';
+      }
+    });
+    renderSymptomSubmitState();
+  }
+
+  function renderSymptomSubmitState() {
+    var otherText = document.getElementById('sym-other').value;
+    var hasAny = Object.keys(symptomState).length > 0 || !!otherText;
+    document.getElementById('sym-submit').disabled = !hasAny;
+    var hasRedFlag = SYMPTOMS && SYMPTOMS.some(function (s) { return s.red_flag && symptomState[s.key]; });
+    document.getElementById('sym-redflag-warn').classList.toggle('hidden', !hasRedFlag);
+  }
+
+  function submitSymptoms() {
+    var errEl = document.getElementById('sym-error');
+    errEl.classList.add('hidden');
+    var btn = document.getElementById('sym-submit');
+    var entries = Object.keys(symptomState).map(function (k) { return { symptom_key: k, severity: symptomState[k] }; });
+    var payload = { entries: entries, other_text: document.getElementById('sym-other').value || null };
+    btn.disabled = true;
+    btn.textContent = 'กำลังบันทึก...';
+    gasRun()
+      .withSuccessHandler(function (data) {
+        document.getElementById('symptoms-form').classList.add('hidden');
+        document.getElementById('symptoms-done').classList.remove('hidden');
+        document.getElementById('symptoms-done-msg').className = 'text-sm leading-relaxed ' + (data.red_flag ? 'text-coral' : 'text-muted');
+        document.getElementById('symptoms-done-msg').textContent = data.red_flag
+          ? 'ระบบได้แจ้งเจ้าหน้าที่คลินิกเกี่ยวกับอาการของคุณแล้ว หากมีอาการรุนแรงมากหรือฉุกเฉิน กรุณาติดต่อคลินิกหรือไปโรงพยาบาลทันที'
+          : 'ขอบคุณที่แจ้งอาการนะคะ ทีมแพทย์จะติดตามให้';
+      })
+      .withFailureHandler(function (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'บันทึกอาการ';
+      })
+      .liffSubmitSymptoms(idToken, payload);
+  }
+
+  // ===================== ความคืบหน้าของฉัน (progress) =====================
+  var progData = null;
+  var progMetric = 'weight';
+  var progChartMode = 'measurements'; // 'measurements' | 'waist'
+  var progChart = null;
+  var METRICS = {
+    weight: { label: 'น้ำหนัก', unit: 'kg', key: 'weight_kg', targetable: true },
+    fat_pct: { label: 'ไขมัน %', unit: '%', key: 'body_fat_percent', targetable: false },
+    fat_mass: { label: 'มวลไขมัน', unit: 'kg', key: 'fat_mass_kg', targetable: false },
+  };
+  var BODY_PARTS = [
+    { key: 'waist_cm', label: 'รอบเอว' },
+    { key: 'chest_cm', label: 'รอบอก' },
+    { key: 'hip_cm', label: 'รอบสะโพก' },
+    { key: 'thigh_cm', label: 'รอบต้นขา' },
+  ];
+
+  function loadProgress() {
+    document.getElementById('prog-loading').classList.remove('hidden');
+    document.getElementById('prog-content').classList.add('hidden');
+    gasRun().withSuccessHandler(function (data) {
+      progData = data;
+      document.getElementById('prog-loading').classList.add('hidden');
+      document.getElementById('prog-content').classList.remove('hidden');
+      renderProgress();
+    }).withFailureHandler(function (e) { showError(e.message); }).liffGetProgress(idToken);
+  }
+
+  function renderProgress() {
+    document.getElementById('prog-hn').textContent = progData.patient.hn;
+
+    var withWeight = progData.measurements.filter(function (m) { return m.weight_kg != null; });
+    var current = withWeight.length > 0 ? withWeight[withWeight.length - 1].weight_kg : null;
+    var baseline = progData.baseline_weight_kg != null ? progData.baseline_weight_kg : (withWeight.length > 0 ? withWeight[0].weight_kg : null);
+    var lost = (current != null && baseline != null) ? Math.round((baseline - current) * 10) / 10 : null;
+
+    document.getElementById('prog-current').textContent = current != null ? current.toFixed(1) : '—';
+    var lostWrap = document.getElementById('prog-lost-wrap');
+    if (lost != null) {
+      lostWrap.classList.remove('hidden');
+      document.getElementById('prog-lost').textContent = (lost > 0 ? '-' + lost : lost) + ' kg';
+    } else {
+      lostWrap.classList.add('hidden');
+    }
+
+    var targetRow = document.getElementById('prog-target-row');
+    if (progData.target_weight_kg) {
+      targetRow.classList.remove('hidden');
+      document.getElementById('prog-target').textContent = progData.target_weight_kg;
+    } else {
+      targetRow.classList.add('hidden');
+    }
+
+    var doseRow = document.getElementById('prog-dose-row');
+    if (progData.current_dose) {
+      doseRow.classList.remove('hidden');
+      var txt = 'ขนาดยาปัจจุบัน: ' + progData.current_dose.dose_mg + ' mg';
+      if (progData.current_dose.next_dose_date) txt += ' · นัดฉีดถัดไป ' + fmtDate(progData.current_dose.next_dose_date);
+      doseRow.innerHTML = txt.replace(progData.current_dose.dose_mg + ' mg', '<span class="num">' + progData.current_dose.dose_mg + ' mg</span>');
+    } else {
+      doseRow.classList.add('hidden');
+    }
+
+    // metric chips
+    var chipsHtml = '';
+    Object.keys(METRICS).forEach(function (key) {
+      var on = progChartMode === 'measurements' && progMetric === key;
+      chipsHtml += '<button onclick="setProgMetric(\'' + key + '\')" class="chip ' + (on ? 'on' : '') + '">' + METRICS[key].label + '</button>';
+    });
+    chipsHtml += '<button onclick="setProgChartMode(\'waist\')" class="chip ' + (progChartMode === 'waist' ? 'on' : '') + '">รอบเอว</button>';
+    document.getElementById('prog-metric-chips').innerHTML = chipsHtml;
+
+    // body measure deltas
+    var bm = progData.body_measures || [];
+    var bmWrap = document.getElementById('prog-body-measures');
+    if (bm.length > 0) {
+      bmWrap.classList.remove('hidden');
+      var html = '';
+      BODY_PARTS.forEach(function (part) {
+        var first = bm.find(function (b) { return b[part.key] != null; });
+        var last = null;
+        for (var i = bm.length - 1; i >= 0; i--) { if (bm[i][part.key] != null) { last = bm[i]; break; } }
+        if (!first || !last) return;
+        var delta = Math.round((first[part.key] - last[part.key]) * 10) / 10;
+        var deltaHtml = '';
+        if (delta !== 0) {
+          deltaHtml = '<span class="ml-2 ' + (delta > 0 ? 'text-teal' : 'text-coral') + '">(' + (delta > 0 ? '-' : '+') + Math.abs(delta) + ')</span>';
+        }
+        html += '<div class="flex items-center justify-between text-sm"><span class="text-muted">' + part.label + '</span><span class="num">' + last[part.key] + ' cm' + deltaHtml + '</span></div>';
+      });
+      document.getElementById('prog-body-measures-list').innerHTML = html;
+    } else {
+      bmWrap.classList.add('hidden');
+    }
+
+    renderProgChart();
+  }
+
+  function setProgMetric(key) { progMetric = key; progChartMode = 'measurements'; renderProgress(); }
+  function setProgChartMode(mode) { progChartMode = mode; renderProgress(); }
+
+  function renderProgChart() {
+    var labels = [], values = [], colors = [];
+    if (progChartMode === 'waist') {
+      progData.body_measures.forEach(function (b) {
+        if (b.waist_cm == null) return;
+        labels.push(fmtDate(b.measured_at)); values.push(b.waist_cm); colors.push('#13837B');
+      });
+    } else {
+      var m = METRICS[progMetric];
+      progData.measurements.forEach(function (row) {
+        if (row[m.key] == null) return;
+        labels.push(fmtDate(row.measured_at)); values.push(row[m.key]);
+        colors.push(row.source === 'bia_ocr' ? '#D9785F' : '#13837B');
+      });
+    }
+
+    var canvas = document.getElementById('prog-chart');
+    var empty = document.getElementById('prog-empty');
+    if (values.length === 0) {
+      empty.classList.remove('hidden');
+      canvas.classList.add('hidden');
+      if (progChart) { progChart.destroy(); progChart = null; }
+      return;
+    }
+    empty.classList.add('hidden');
+    canvas.classList.remove('hidden');
+
+    var datasets = [{
+      label: METRICS[progMetric] ? METRICS[progMetric].label : 'รอบเอว',
+      data: values,
+      borderColor: '#13837B',
+      backgroundColor: 'rgba(19,131,123,0.15)',
+      pointBackgroundColor: colors,
+      pointBorderColor: '#fff',
+      pointRadius: 3.5,
+      fill: true,
+      tension: 0.35,
+    }];
+    if (progChartMode === 'measurements' && progMetric === 'weight' && progData.target_weight_kg) {
+      datasets.push({
+        label: 'เป้าหมาย',
+        data: labels.map(function () { return progData.target_weight_kg; }),
+        borderColor: '#D9785F',
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: false,
+      });
+    }
+
+    if (progChart) progChart.destroy();
+    progChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 11 }, color: '#8C938E' }, grid: { display: false } },
+          y: { ticks: { font: { size: 11 }, color: '#8C938E' }, grid: { color: '#E7E3DC' } },
+        },
+      },
+    });
+  }
+</script>
+</body>
+</html>
