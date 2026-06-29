@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <!-- Styles.html -------------------------------------------------------
+     ใช้ร่วมกันทั้ง LiffApp.html และ AdminApp.html ผ่าน
+     <?!= include('Styles'); ?> ใน <head>
+     - โหลด Tailwind ผ่าน CDN (config สีให้ตรงกับ design token เดิม)
+     - โหลดฟอนต์ Kanit / Anuphan
+     - คลาส component ที่ใช้ซ้ำ (.chip, .fchip, .act, .seg/.segbtn, .prow, .num)
+---------------------------------------------------------------------->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Anuphan:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: "#EFEBE5",
+          panel: "#FFFFFF",
+          ink: "#1E2E2B",
+          muted: "#8C938E",
+          line: "#E7E3DC",
+          teal: "#13837B",
+          tealSoft: "#C9E6E2",
+          coral: "#D9785F",
+          coralSoft: "#F2D9D1",
+          amber: "#C98A1E",
+          amberSoft: "#F3E4C4",
+          redSoft: "#F2D9D1",
+          greenSoft: "#D5E9D6",
+        },
+        fontFamily: {
+          kanit: ["Kanit", "sans-serif"],
+          anuphan: ["Anuphan", "sans-serif"],
+        },
+        borderRadius: {
+          xl2: "1.25rem",
+        },
+      },
+    },
+  };
+</script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { background: #EFEBE5; color: #1E2E2B; font-family: 'Anuphan', sans-serif; margin: 0; }
+
+  .num { font-family: 'Kanit', sans-serif; font-variant-numeric: tabular-nums; }
+
+  .chip {
+    font-family: 'Anuphan', sans-serif; font-size: 13.5px; font-weight: 500;
+    padding: 8px 15px; border-radius: 999px; border: 1px solid #E7E3DC;
+    background: #fff; color: #8C938E; cursor: pointer; white-space: nowrap; transition: all .18s;
+  }
+  .chip.on { background: #1E2E2B; color: #fff; border-color: #1E2E2B; }
+
+  .fchip {
+    font-size: 13.5px; font-weight: 500; padding: 7px 15px; border-radius: 999px;
+    border: 1px solid #E7E3DC; background: #fff; color: #8C938E; cursor: pointer; transition: all .15s;
+  }
+  .fchip.on { background: #1E2E2B; color: #fff; border-color: #1E2E2B; }
+
+  .act {
+    border: 1px solid #E7E3DC; background: #fff; border-radius: 9px; padding: 6px 12px;
+    font-family: 'Anuphan', sans-serif; font-size: 12.5px; cursor: pointer; color: #1E2E2B;
+  }
+  .act:hover { border-color: #13837B; color: #13837B; }
+
+  .cta:active { transform: scale(.985); }
+
+  .seg { display: inline-flex; background: #fff; border: 1px solid #E7E3DC; border-radius: 999px; padding: 4px; gap: 4px; }
+  .segbtn {
+    border: none; background: transparent; font-family: 'Kanit', sans-serif; font-size: 14px;
+    font-weight: 500; padding: 8px 18px; border-radius: 999px; cursor: pointer; color: #8C938E; transition: all .18s;
+  }
+  .segbtn.on { background: #13837B; color: #fff; }
+
+  .prow { cursor: pointer; transition: background .12s; }
+  .prow:hover { background: #FAF8F4; }
+  .prow.sel { background: #C9E6E233; box-shadow: inset 3px 0 0 #13837B; }
+
+  input, select, textarea { font-family: 'Anuphan', sans-serif; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+
+</head>
+<body class="bg-bg">
+<div class="max-w-md mx-auto min-h-screen px-4 py-6">
+
+  <div class="text-center mb-6">
+    <img src="data:image/png;base64,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" alt="Derma P Clinic" class="inline-block h-16 w-16 object-contain">
+    <div class="mt-2 font-kanit text-lg">DERMA P CLINIC</div>
+    <div class="text-xs text-muted">ระบบติดตามผลโปรแกรมลดน้ำหนัก</div>
+  </div>
+
+  <div id="view-loading" class="view text-center text-sm text-muted py-10"><span id="loading-text">กำลังโหลด...</span></div>
+
+  <div id="view-error" class="view hidden rounded-xl2 border border-line bg-white p-4 text-sm text-coral"></div>
+
+  <div id="view-pending" class="view hidden rounded-xl2 border border-line bg-white p-5 text-center">
+    <div class="text-3xl mb-2">⏳</div>
+    <div class="font-kanit text-base mb-1">รอเจ้าหน้าที่ผูกบัญชี</div>
+    <p class="text-sm text-muted leading-relaxed">
+      บัญชี LINE ของคุณยังไม่ได้เชื่อมกับประวัติคนไข้ในคลินิก
+      กรุณาแจ้งเจ้าหน้าที่ที่เคาน์เตอร์เพื่อทำการผูกบัญชี (ใช้เลข HN จากบัตรคิว)
+    </p>
+  </div>
+
+  <!-- ===================== เมนูหลัก ===================== -->
+  <div id="view-menu" class="view hidden">
+    <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+      <div class="text-xs text-muted">คนไข้</div>
+      <div class="font-kanit text-base" id="patient-name">—</div>
+      <div class="text-xs text-muted num" id="patient-hn">—</div>
+    </div>
+    <div class="space-y-3">
+      <div onclick="showView('record')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">📷</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">บันทึกผลวันนี้</div><div class="text-xs text-muted mt-0.5">ชั่งน้ำหนัก / ถ่ายรูปผล BIA</div></div>
+        <div class="text-muted">›</div>
+      </div>
+      <div onclick="showView('symptoms')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">🩺</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">บันทึกอาการข้างเคียง</div><div class="text-xs text-muted mt-0.5">เช็คอาการที่พบช่วงนี้</div></div>
+        <div class="text-muted">›</div>
+      </div>
+      <div onclick="showView('progress')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">📈</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">ความคืบหน้าของฉัน</div><div class="text-xs text-muted mt-0.5">กราฟน้ำหนัก/องค์ประกอบร่างกาย</div></div>
+        <div class="text-muted">›</div>
+      </div>
+      <div onclick="showView('screening')" class="cta flex items-center gap-3 rounded-xl2 border border-line bg-white p-4 hover:border-teal transition-colors">
+        <div class="text-2xl">📋</div>
+        <div class="flex-1"><div class="font-kanit text-[15px]">แบบประเมินก่อนเริ่มยา</div><div class="text-xs text-muted mt-0.5">กรอกครั้งแรกก่อนเริ่มโปรแกรม</div></div>
+        <div class="text-muted">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== บันทึกผลวันนี้ ===================== -->
+  <div id="view-record" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div class="mb-4">
+      <div class="font-kanit text-lg">บันทึกผลวันนี้</div>
+      <div class="text-xs text-muted">กรอกข้อมูลผลตรวจของวันนี้</div>
+    </div>
+
+    <!-- ฟีเจอร์ "ถ่ายรูปผล BIA" (อ่านค่าด้วย AI) ปิดใช้งานชั่วคราว เหลือไว้ให้กรอกเองอย่างเดียว
+         โค้ดเดิมยังอยู่ครบด้านล่าง (ซ่อนด้วย class="hidden") ถ้าต้องการเปิดกลับมาใช้
+         ให้เอา class="hidden" ออกจาก #record-seg และ #record-capture-photo แล้วเปลี่ยน
+         initRecordView() ให้เรียก recordSetTab('photo') แทน startManual() -->
+    <div id="record-seg" class="seg mb-4 hidden">
+      <button class="segbtn on" id="record-tab-photo" onclick="recordSetTab('photo')">ถ่ายรูปผล BIA</button>
+      <button class="segbtn" id="record-tab-manual" onclick="recordSetTab('manual')">กรอกข้อมูลเอง</button>
+    </div>
+
+    <div id="record-capture-photo" class="hidden rounded-xl2 border border-line bg-white p-5 text-center">
+      <div class="text-3xl mb-2">📷</div>
+      <p class="text-sm text-muted mb-4 leading-relaxed">ถ่ายรูปจอเครื่อง BIA หรือใบผลตรวจให้ชัด ระบบจะอ่านค่าให้อัตโนมัติ แล้วให้คุณตรวจ/แก้ไขก่อนบันทึกเสมอ</p>
+      <input type="file" accept="image/*" capture="environment" class="hidden" id="bia-photo" onchange="handlePhoto(event)">
+      <label for="bia-photo" class="cta inline-block rounded-xl border-none bg-teal px-6 py-3 font-kanit text-[15px] text-white cursor-pointer" id="bia-photo-label">เลือก/ถ่ายรูป</label>
+      <div class="mt-3 text-xs text-coral hidden" id="record-ocr-error"></div>
+    </div>
+
+    <div id="record-capture-manual" class="hidden rounded-xl2 border border-line bg-white p-5 text-center">
+      <div class="text-3xl mb-2">✍️</div>
+      <p class="text-sm text-muted mb-4 leading-relaxed">กรอกค่าน้ำหนักหรือผลตรวจด้วยตัวเอง — ฟิลด์ใดไม่มีข้อมูลเว้นว่างได้</p>
+      <button onclick="startManual()" class="cta rounded-xl border-none bg-teal px-6 py-3 font-kanit text-[15px] text-white">เริ่มกรอกข้อมูล</button>
+    </div>
+
+    <div id="record-confirm" class="hidden rounded-xl2 border border-line bg-white p-5">
+      <div id="record-ocr-info" class="hidden mb-4 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="fchip on" style="cursor:default">อ่านจากรูป AI</span>
+          <span class="text-xs text-muted" id="record-confidence"></span>
+        </div>
+        <div id="record-low-confidence" class="hidden rounded-lg bg-amberSoft px-3 py-2 text-xs text-amber">⚠️ ความมั่นใจค่อนข้างต่ำ กรุณาตรวจค่าด้านล่างให้ตรงกับผลจริงก่อนบันทึก</div>
+        <div id="record-sanity-flag" class="hidden rounded-lg bg-coralSoft px-3 py-2 text-xs text-coral">⚠️ ค่าบางตัวอยู่นอกช่วงปกติ กรุณาตรวจสอบอีกครั้งก่อนบันทึก</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="text-xs font-medium text-muted">วันที่บันทึกผล <span class="text-teal">(เปลี่ยนวันย้อนหลังได้)</span></label>
+        <input type="date" id="record-measured-at" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal">
+        <div class="mt-1 text-xs text-muted">กดที่วันที่เพื่อเลือกวันที่บันทึกจริง</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3" id="record-fields"></div>
+
+      <div id="record-bmi-box" class="mt-3 hidden rounded-[11px] bg-tealSoft px-3 py-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-muted">BMI (คำนวณจากน้ำหนัก + ส่วนสูง)</span>
+          <span class="num font-kanit text-base text-teal" id="record-bmi-val">—</span>
+        </div>
+        <div class="num text-[11px] text-muted" id="record-bmi-detail"></div>
+      </div>
+      <div id="record-bmi-nohint" class="mt-3 hidden rounded-[11px] bg-amberSoft px-3 py-2 text-[11px] text-ink">
+        ยังไม่มีส่วนสูงในระบบ — กรอกแบบประเมินก่อนเริ่มยาเพื่อให้คำนวณ BMI อัตโนมัติได้
+      </div>
+
+      <div class="mt-3 text-xs text-coral hidden" id="record-save-error"></div>
+
+      <div class="mt-5 flex gap-2">
+        <button onclick="recordBackToCapture()" class="act flex-1 rounded-xl py-2.5 text-sm">ย้อนกลับ</button>
+        <button onclick="handleSaveMeasurement()" id="record-save-btn" class="cta flex-1 rounded-xl border-none bg-teal py-2.5 text-sm font-kanit text-white">ยืนยันและบันทึก</button>
+      </div>
+    </div>
+
+    <div id="record-done" class="hidden rounded-xl2 border border-line bg-white p-6 text-center">
+      <div class="text-3xl mb-2">✅</div>
+      <div class="font-kanit text-base mb-1">บันทึกผลแล้ว</div>
+      <p class="text-sm text-muted mb-4">ขอบคุณที่บันทึกผลอย่างสม่ำเสมอนะคะ</p>
+      <button onclick="recordReset()" class="act rounded-xl px-5 py-2.5 text-sm">บันทึกอีกครั้ง</button>
+    </div>
+  </div>
+
+  <!-- ===================== แบบประเมินก่อนเริ่มยา ===================== -->
+  <div id="view-screening" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div id="screening-form">
+      <div class="mb-4">
+        <div class="font-kanit text-lg">แบบประเมินก่อนเริ่มยา</div>
+        <div class="text-xs text-muted">กรอกข้อมูลให้ครบเพื่อให้แพทย์ตรวจสอบก่อนเริ่มโปรแกรม</div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="font-kanit text-[14.5px] mb-2">ข้อมูลพื้นฐาน</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-xs font-medium text-muted">น้ำหนักตั้งต้น (kg)</label>
+            <input type="number" inputmode="decimal" id="scr-weight" oninput="updateBmiPreview()" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>
+          <div><label class="text-xs font-medium text-muted">ส่วนสูง (cm)</label>
+            <input type="number" inputmode="decimal" id="scr-height" oninput="updateBmiPreview()" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>
+          <div class="col-span-2"><label class="text-xs font-medium text-muted">น้ำหนักเป้าหมาย (kg)</label>
+            <input type="number" inputmode="decimal" id="scr-target" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>
+        </div>
+        <div class="mt-2 text-xs text-muted hidden" id="scr-bmi-row">BMI ประมาณ <span class="num font-medium text-ink" id="scr-bmi"></span></div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="font-kanit text-[14.5px] mb-1">ข้อห้ามใช้ยา (ถ้ามี)</div>
+        <div class="text-xs text-muted mb-2">เลือกถ้าเคยมีหรือสงสัยว่ามีภาวะดังนี้</div>
+        <div class="flex flex-wrap gap-2" id="scr-contra"></div>
+        <div class="mt-2 rounded-lg bg-amberSoft px-3 py-2 text-xs text-amber hidden" id="scr-contra-warn">⚠️ แพทย์จะตรวจสอบรายการนี้เป็นพิเศษก่อนอนุมัติ</div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="font-kanit text-[14.5px] mb-1">โรคประจำตัว</div>
+        <div class="flex flex-wrap gap-2" id="scr-conditions"></div>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <label class="text-xs font-medium text-muted">ยาที่ใช้ประจำ</label>
+        <textarea id="scr-medications" rows="2" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></textarea>
+        <label class="mt-3 block text-xs font-medium text-muted">ประวัติการแพ้ยา/อาหาร</label>
+        <textarea id="scr-allergy" rows="2" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></textarea>
+      </div>
+
+      <div class="mb-3 text-xs text-coral hidden" id="scr-error"></div>
+      <button onclick="submitScreening()" id="scr-submit" class="cta w-full rounded-xl border-none bg-teal py-3 font-kanit text-[15px] text-white disabled:opacity-50" disabled>ส่งแบบประเมิน</button>
+    </div>
+
+    <div id="screening-done" class="hidden text-center py-10">
+      <div class="text-3xl mb-2">📋</div>
+      <div class="font-kanit text-base mb-1">ส่งแบบประเมินแล้ว</div>
+      <p class="text-sm text-muted leading-relaxed">แพทย์จะตรวจสอบข้อมูลของคุณก่อนเริ่มโปรแกรม หากมีข้อสงสัยเจ้าหน้าที่จะติดต่อกลับนะคะ</p>
+    </div>
+  </div>
+
+  <!-- ===================== บันทึกอาการข้างเคียง ===================== -->
+  <div id="view-symptoms" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div id="symptoms-form">
+      <div class="mb-4">
+        <div class="font-kanit text-lg">บันทึกอาการข้างเคียง</div>
+        <div class="text-xs text-muted">เลือกอาการที่พบ แล้วระบุระดับความรุนแรง</div>
+      </div>
+      <div class="space-y-2" id="symptoms-list"></div>
+      <div class="mt-4">
+        <label class="text-xs font-medium text-muted">อาการอื่นๆ (ถ้ามี)</label>
+        <textarea id="sym-other" rows="3" placeholder="พิมพ์อาการอื่นที่ไม่อยู่ในรายการ..." oninput="renderSymptomSubmitState()" class="mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></textarea>
+      </div>
+      <div id="sym-redflag-warn" class="mt-3 rounded-lg bg-coralSoft px-3 py-2 text-xs text-coral hidden">⚠️ อาการที่คุณเลือกจะถูกส่งแจ้งเจ้าหน้าที่คลินิกทันที</div>
+      <div id="sym-error" class="mt-3 text-xs text-coral hidden"></div>
+      <button onclick="submitSymptoms()" id="sym-submit" class="cta mt-5 w-full rounded-xl border-none bg-teal py-3 font-kanit text-[15px] text-white disabled:opacity-50" disabled>บันทึกอาการ</button>
+    </div>
+    <div id="symptoms-done" class="hidden text-center py-10">
+      <div class="text-3xl mb-2">✅</div>
+      <div class="font-kanit text-base mb-1">บันทึกอาการแล้ว</div>
+      <p class="text-sm leading-relaxed" id="symptoms-done-msg"></p>
+    </div>
+  </div>
+
+  <!-- ===================== ความคืบหน้าของฉัน ===================== -->
+  <div id="view-progress" class="view hidden">
+    <button onclick="showView('menu')" class="act mb-3">← กลับ</button>
+    <div class="mb-4">
+      <div class="font-kanit text-lg">ความคืบหน้าของฉัน</div>
+      <div class="text-xs text-muted num" id="prog-hn"></div>
+    </div>
+
+    <div id="prog-loading" class="text-center text-sm text-muted py-10">กำลังโหลด...</div>
+
+    <div id="prog-content" class="hidden">
+      <div class="rounded-xl2 border border-line bg-white p-4 mb-4">
+        <div class="flex items-end gap-4">
+          <div>
+            <div class="text-xs text-muted">น้ำหนักปัจจุบัน</div>
+            <div class="num font-kanit text-3xl"><span id="prog-current">—</span><span class="text-sm text-muted ml-1">kg</span></div>
+          </div>
+          <div class="pb-1 hidden" id="prog-lost-wrap">
+            <div class="text-xs text-muted">ลดไปแล้ว</div>
+            <div class="num text-lg text-teal" id="prog-lost"></div>
+          </div>
+        </div>
+        <div class="mt-2 text-xs text-muted hidden" id="prog-target-row">เป้าหมาย: <span class="num" id="prog-target"></span> kg</div>
+        <div class="mt-1 text-xs text-muted hidden" id="prog-dose-row"></div>
+      </div>
+
+      <div class="flex gap-2 mb-3 overflow-x-auto" id="prog-metric-chips"></div>
+
+      <div class="rounded-xl2 border border-line bg-white p-3 mb-4 relative" style="height:220px">
+        <canvas id="prog-chart"></canvas>
+        <div id="prog-empty" class="hidden absolute inset-0 flex items-center justify-center text-sm text-muted">ยังไม่มีข้อมูล</div>
+      </div>
+      <div class="mb-4 flex items-center gap-3 text-[11px] text-muted">
+        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-teal inline-block"></span> กรอกเอง</span>
+        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-coral inline-block"></span> อ่านจากรูป AI</span>
+      </div>
+
+      <div class="rounded-xl2 border border-line bg-white p-4 hidden" id="prog-body-measures">
+        <div class="font-kanit text-[14.5px] mb-2">สัดส่วนที่เปลี่ยนไป</div>
+        <div class="space-y-2" id="prog-body-measures-list"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  var LIFF_ID = "2010538932-JXYky6qI";
+  var CONTRA = [
+  { k: "mtc", label: "มะเร็งไทรอยด์ (ตนเอง/ครอบครัว)" },
+  { k: "men2", label: "เนื้องอกต่อมไร้ท่อ MEN2" },
+  { k: "pancreatitis", label: "เคยเป็นตับอ่อนอักเสบ" },
+  { k: "pregnant", label: "ตั้งครรภ์ / ให้นมบุตร" },
+  { k: "allergyGLP", label: "แพ้ยาลดน้ำหนักกลุ่มนี้" },
+];
+  var CONDITIONS = [
+  "เบาหวาน", "โรคไต", "โรคตับ", "นิ่ว/โรคถุงน้ำดี",
+  "โรคทางเดินอาหาร", "ประวัติการกินผิดปกติ", "โรคหัวใจ", "ไทรอยด์ผิดปกติ",
+];
+  var SEV = {
+  low: { label: "น้อย", fg: "#2E6B3A", bg: "#D5E9D6" },
+  mid: { label: "ปานกลาง", fg: "#C98A1E", bg: "#F3E4C4" },
+  high: { label: "มาก", fg: "#B0452F", bg: "#F2D9D1" },
+};
+  var MEDICATION = {
+  wegovy: { label: "Wegovy", short: "W", fg: "#13837B", bg: "#C9E6E2", point: "#13837B" },
+  mounjaro: { label: "Mounjaro", short: "M", fg: "#B0452F", bg: "#F2D9D1", point: "#D9785F" },
+  other: { label: "อื่นๆ", short: "?", fg: "#8C938E", bg: "#EEEDEA", point: "#8C938E" },
+};
+
+
+  // ===================== Apps Script bridge (GitHub Pages) =====================
+  // ปลายทาง Apps Script web app (/exec) — ใส่ URL ของคุณตรงนี้
+  var GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxCBbtSxCLkxjf1-gzyot1Q_yjA19bs5wRBgJPVZFnOUr0f1kKFCFlSetpnLFDxbHl7TA/exec";
+
+  // จำลอง gasRun() API เดิม ให้เรียกผ่าน fetch ไป doPost แทน
+  // ใช้ text/plain เพื่อเลี่ยง CORS preflight (Apps Script ไม่ตอบ OPTIONS)
+  function gasRun() {
+    var successCb = null, failureCb = null;
+    var api = {
+      withSuccessHandler: function (fn) { successCb = fn; return api; },
+      withFailureHandler: function (fn) { failureCb = fn; return api; }
+    };
+    // สร้าง method ตามรายชื่อ action ที่ server รองรับ
+    var ACTIONS = ["liffGetSymptomCatalog","liffCheckSession","liffGetProgress",
+      "liffSubmitScreening","liffReadBiaPhoto","liffSaveMeasurement","liffSubmitSymptoms"];
+    ACTIONS.forEach(function (name) {
+      api[name] = function () {
+        var args = Array.prototype.slice.call(arguments);
+        fetch(GAS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: name, args: args })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res.ok) { if (successCb) successCb(res.data); }
+          else { if (failureCb) failureCb(new Error(res.error)); }
+        })
+        .catch(function (e) { if (failureCb) failureCb(e); });
+      };
+    });
+    return api;
+  }
+  // หมายเหตุ: ทุกครั้งที่เรียก gasRun() จะสร้าง instance ใหม่ มี callback แยกของตัวเอง
+
+  var idToken = null;
+  var TH_MONTH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  function fmtDate(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.getDate() + " " + TH_MONTH[d.getMonth()];
+  }
+  function todayIso() {
+    var d = new Date();
+    var m = ("0" + (d.getMonth()+1)).slice(-2);
+    var day = ("0" + d.getDate()).slice(-2);
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  // ===================== view switching =====================
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(function (el) { el.classList.add('hidden'); });
+    var el = document.getElementById('view-' + name);
+    if (el) el.classList.remove('hidden');
+    if (name === 'progress') loadProgress();
+    if (name === 'symptoms') initSymptomsView();
+    if (name === 'screening') initScreeningView();
+    if (name === 'record') recordReset();
+  }
+  function showError(msg) {
+    document.getElementById('view-error').textContent = msg;
+    showView('error');
+  }
+
+  // ===================== init / session =====================
+  function dbg(t) { var el = document.getElementById('loading-text'); if (el) el.textContent = t; }
+
+  // timeout 15 วิ กรณี liff.init ค้างเงียบๆ
+  var initTimeout = setTimeout(function () {
+    showError("โหลดนานเกินไป — กรุณาเปิดลิงก์นี้ผ่านแอป LINE โดยตรง หรือติดต่อเจ้าหน้าที่คลินิก");
+  }, 15000);
+
+  runLiff();
+
+  function runLiff() {
+  dbg("เริ่ม init...");
+  liff.init({ liffId: LIFF_ID }).then(function () {
+    clearTimeout(initTimeout);
+    dbg("init สำเร็จ, เช็ค login...");
+    if (!liff.isLoggedIn()) { dbg("ยังไม่ login, redirect..."); liff.login(); return; }
+    dbg("login แล้ว, ดึง idToken...");
+    idToken = liff.getIDToken();
+    if (!idToken) { showError("ไม่สามารถดึง idToken ได้ — ตรวจสอบว่า LIFF scope มี openid ครบ"); return; }
+    dbg("ได้ idToken, เช็ค session กับ server...");
+    gasRun()
+      .withSuccessHandler(onSession)
+      .withFailureHandler(function (e) { showError("Server error: " + (e && e.message ? e.message : e)); })
+      .liffCheckSession(idToken);
+  }).catch(function (e) {
+    clearTimeout(initTimeout);
+    showError("LIFF init error: " + (e && e.code ? e.code + " — " : "") + (e && e.message ? e.message : e));
+  });
+  } // end runLiff
+
+  var patientHeightCm = null; // ส่วนสูงจากแบบประเมิน ใช้คำนวณ BMI อัตโนมัติ
+
+  function onSession(data) {
+    if (data.linked) {
+      document.getElementById('patient-name').textContent = data.patient.name;
+      document.getElementById('patient-hn').textContent = data.patient.hn;
+      patientHeightCm = data.height_cm != null ? Number(data.height_cm) : null;
+      showView('menu');
+    } else {
+      showView('pending');
+    }
+  }
+
+  // ===================== บันทึกผลวันนี้ (record) =====================
+  var FIELD_LABELS = [
+    { key: 'weight_kg', label: 'น้ำหนัก', unit: 'kg' },
+    { key: 'body_fat_percent', label: 'เปอร์เซ็นต์ไขมัน', unit: '%' },
+    { key: 'fat_mass_kg', label: 'มวลไขมัน', unit: 'kg' },
+    { key: 'muscle_mass_kg', label: 'มวลกล้ามเนื้อ', unit: 'kg' },
+    { key: 'total_body_water_kg', label: 'น้ำในร่างกาย', unit: 'kg' },
+    { key: 'visceral_fat_level', label: 'ไขมันช่องท้อง (ระดับ)', unit: '' },
+  ];
+  var recordState = { source: 'manual', confidence: null, sanityFlag: false, deviceModel: null, ocrNotes: null };
+
+  function recordSetTab(tab) {
+    document.getElementById('record-tab-photo').classList.toggle('on', tab === 'photo');
+    document.getElementById('record-tab-manual').classList.toggle('on', tab === 'manual');
+    document.getElementById('record-capture-photo').classList.toggle('hidden', tab !== 'photo');
+    document.getElementById('record-capture-manual').classList.toggle('hidden', tab !== 'manual');
+  }
+
+  function recordReset() {
+    // ฟีเจอร์ถ่ายรูป BIA ปิดใช้งานชั่วคราว — เริ่มต้นที่โหมดกรอกเองเสมอ
+    // (เดิมเริ่มที่แท็บ 'photo' และเปิด #record-seg / #record-capture-photo กลับมา
+    // ถ้าจะเปิดฟีเจอร์ถ่ายรูปกลับมาใช้ ให้คืนโค้ดบรรทัดที่ comment ไว้ด้านล่าง)
+    recordState = { source: 'manual', confidence: null, sanityFlag: false, deviceModel: null, ocrNotes: null };
+    // document.getElementById('record-seg').classList.remove('hidden');
+    // document.getElementById('record-capture-photo').classList.remove('hidden');
+    document.getElementById('record-capture-manual').classList.remove('hidden');
+    document.getElementById('record-confirm').classList.add('hidden');
+    document.getElementById('record-done').classList.add('hidden');
+    document.getElementById('record-ocr-error').classList.add('hidden');
+    document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป';
+    recordSetTab('manual');
+  }
+
+  function recordBackToCapture() {
+    // document.getElementById('record-seg').classList.remove('hidden');
+    document.getElementById('record-confirm').classList.add('hidden');
+    recordSetTab(recordState.source === 'bia_ocr' ? 'photo' : 'manual');
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = reader.result;
+        resolve({ base64: result.split(',')[1], mediaType: file.type || 'image/jpeg' });
+      };
+      reader.onerror = function () { reject(new Error('อ่านไฟล์รูปไม่สำเร็จ')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handlePhoto(ev) {
+    var file = ev.target.files && ev.target.files[0];
+    var input = ev.target;
+    if (!file || !idToken) return;
+    document.getElementById('bia-photo-label').textContent = 'กำลังอ่านผล...';
+    document.getElementById('record-ocr-error').classList.add('hidden');
+
+    fileToBase64(file).then(function (r) {
+      gasRun()
+        .withSuccessHandler(function (data) { onBiaResult(data); input.value = ''; document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป'; })
+        .withFailureHandler(function (e) { showOcrError(e.message); input.value = ''; document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป'; })
+        .liffReadBiaPhoto(idToken, r.base64, r.mediaType);
+    }).catch(function (e) { showOcrError(e.message); input.value = ''; document.getElementById('bia-photo-label').textContent = 'เลือก/ถ่ายรูป'; });
+  }
+
+  function showOcrError(msg) {
+    var el = document.getElementById('record-ocr-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  function onBiaResult(data) {
+    if (!data.readable) {
+      showOcrError(data.notes || 'ระบบอ่านผลภาพไม่สำเร็จ กรุณากรอกข้อมูลเอง');
+      recordSetTab('manual');
+      startManual();
+      return;
+    }
+    recordState.source = 'bia_ocr';
+    recordState.confidence = data.overall_confidence != null ? data.overall_confidence : null;
+    recordState.sanityFlag = !!data.sanity_flag;
+    recordState.deviceModel = data.device_model || null;
+    recordState.ocrNotes = data.notes || null;
+    openConfirm(data.values || {}, data.measured_at || todayIso());
+  }
+
+  function startManual() {
+    recordState = { source: 'manual', confidence: null, sanityFlag: false, deviceModel: null, ocrNotes: null };
+    openConfirm({}, todayIso());
+  }
+
+  function openConfirm(values, measuredAt) {
+    document.getElementById('record-seg').classList.add('hidden');
+    document.getElementById('record-capture-photo').classList.add('hidden');
+    document.getElementById('record-capture-manual').classList.add('hidden');
+    document.getElementById('record-confirm').classList.remove('hidden');
+    document.getElementById('record-measured-at').value = measuredAt;
+
+    var fieldsHtml = '';
+    FIELD_LABELS.forEach(function (f) {
+      var v = values[f.key];
+      var oninput = (f.key === 'weight_kg') ? ' oninput="updateRecordBmi()"' : '';
+      fieldsHtml += '<div><label class="text-xs font-medium text-muted">' + f.label + (f.unit ? ' <span class="text-muted">(' + f.unit + ')</span>' : '') + '</label>'
+        + '<input type="number" inputmode="decimal" step="0.1" id="field-' + f.key + '"' + oninput + ' placeholder="—" value="' + (v != null ? v : '') + '" class="num mt-1 w-full rounded-[11px] border border-line px-3 py-2.5 text-sm outline-none focus:border-teal"></div>';
+    });
+    document.getElementById('record-fields').innerHTML = fieldsHtml;
+    updateRecordBmi();
+
+    var ocrInfo = document.getElementById('record-ocr-info');
+    if (recordState.source === 'bia_ocr') {
+      ocrInfo.classList.remove('hidden');
+      var conf = recordState.confidence;
+      document.getElementById('record-confidence').textContent = conf != null ? ('ความมั่นใจ ' + Math.round(conf * 100) + '%') : '';
+      document.getElementById('record-low-confidence').classList.toggle('hidden', !(conf != null && conf < 0.7));
+      document.getElementById('record-sanity-flag').classList.toggle('hidden', !recordState.sanityFlag);
+    } else {
+      ocrInfo.classList.add('hidden');
+    }
+    document.getElementById('record-save-error').classList.add('hidden');
+  }
+
+  // คำนวณ BMI สดจากน้ำหนักที่กรอก + ส่วนสูงที่บันทึกไว้ (BMI = kg / m^2)
+  function computeBmi(weightKg) {
+    if (!patientHeightCm || !weightKg) return null;
+    var hM = patientHeightCm / 100;
+    if (hM <= 0) return null;
+    return weightKg / (hM * hM);
+  }
+
+  function bmiCategory(bmi) {
+    if (bmi < 18.5) return 'น้ำหนักน้อย';
+    if (bmi < 23) return 'ปกติ';
+    if (bmi < 25) return 'ท้วม';
+    if (bmi < 30) return 'อ้วนระดับ 1';
+    return 'อ้วนระดับ 2';
+  }
+
+  function updateRecordBmi() {
+    var box = document.getElementById('record-bmi-box');
+    var noHint = document.getElementById('record-bmi-nohint');
+    var wEl = document.getElementById('field-weight_kg');
+    var w = wEl ? Number(wEl.value) : 0;
+
+    if (!patientHeightCm) {
+      box.classList.add('hidden');
+      noHint.classList.toggle('hidden', !w);
+      return;
+    }
+    noHint.classList.add('hidden');
+    var bmi = computeBmi(w);
+    if (bmi == null) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    document.getElementById('record-bmi-val').textContent = bmi.toFixed(1);
+    document.getElementById('record-bmi-detail').textContent = 'ส่วนสูง ' + patientHeightCm + ' ซม. · ' + bmiCategory(bmi);
+  }
+
+  function handleSaveMeasurement() {
+    var btn = document.getElementById('record-save-btn');
+    var errEl = document.getElementById('record-save-error');
+    errEl.classList.add('hidden');
+    var payload = { measured_at: document.getElementById('record-measured-at').value, source: recordState.source, confidence: recordState.source === 'bia_ocr' ? recordState.confidence : null, device_model: recordState.deviceModel, notes: recordState.ocrNotes };
+    FIELD_LABELS.forEach(function (f) {
+      var raw = document.getElementById('field-' + f.key).value;
+      payload[f.key] = raw === '' ? null : Number(raw);
+    });
+    // BMI คำนวณอัตโนมัติจากน้ำหนัก + ส่วนสูง (ไม่ให้คนไข้กรอกเอง)
+    payload.bmi = computeBmi(payload.weight_kg);
+    btn.textContent = 'กำลังบันทึก...';
+    btn.disabled = true;
+    gasRun()
+      .withSuccessHandler(function () {
+        document.getElementById('record-confirm').classList.add('hidden');
+        document.getElementById('record-done').classList.remove('hidden');
+        btn.textContent = 'ยืนยันและบันทึก';
+        btn.disabled = false;
+      })
+      .withFailureHandler(function (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+        btn.textContent = 'ยืนยันและบันทึก';
+        btn.disabled = false;
+      })
+      .liffSaveMeasurement(idToken, payload);
+  }
+
+  // ===================== แบบประเมินก่อนเริ่มยา (screening) =====================
+  var scrContra = {};
+  var scrConditions = {};
+  var screeningInited = false;
+
+  function initScreeningView() {
+    if (screeningInited) return;
+    screeningInited = true;
+    document.getElementById('scr-contra').innerHTML = CONTRA.map(function (c) {
+      return '<button onclick="toggleChip(scrContra,\'' + c.k + '\',\'scr-contra\')" class="fchip" data-key="' + c.k + '" id="scr-contra-' + c.k + '">' + c.label + '</button>';
+    }).join('');
+    document.getElementById('scr-conditions').innerHTML = CONDITIONS.map(function (c, i) {
+      return '<button onclick="toggleChip(scrConditions,\'' + i + '\',\'scr-conditions\')" class="fchip" data-key="' + i + '" id="scr-cond-' + i + '">' + c + '</button>';
+    }).join('');
+    var wEl = document.getElementById('scr-weight'), hEl = document.getElementById('scr-height');
+    [wEl, hEl].forEach(function (el) { el.addEventListener('input', updateScreeningSubmitState); });
+  }
+
+  function toggleChip(state, key, groupPrefix) {
+    if (state[key]) delete state[key]; else state[key] = true;
+    var id = groupPrefix === 'scr-contra' ? 'scr-contra-' + key : 'scr-cond-' + key;
+    document.getElementById(id).classList.toggle('on', !!state[key]);
+    if (groupPrefix === 'scr-contra') {
+      document.getElementById('scr-contra-warn').classList.toggle('hidden', Object.keys(scrContra).length === 0);
+    }
+  }
+
+  function updateBmiPreview() {
+    var w = Number(document.getElementById('scr-weight').value);
+    var h = Number(document.getElementById('scr-height').value);
+    var row = document.getElementById('scr-bmi-row');
+    if (w > 0 && h > 0) {
+      var hm = h / 100;
+      row.classList.remove('hidden');
+      document.getElementById('scr-bmi').textContent = (w / (hm * hm)).toFixed(1);
+    } else {
+      row.classList.add('hidden');
+    }
+    updateScreeningSubmitState();
+  }
+
+  function updateScreeningSubmitState() {
+    var w = document.getElementById('scr-weight').value;
+    var h = document.getElementById('scr-height').value;
+    document.getElementById('scr-submit').disabled = !(w && h);
+  }
+
+  function submitScreening() {
+    var errEl = document.getElementById('scr-error');
+    errEl.classList.add('hidden');
+    var btn = document.getElementById('scr-submit');
+    var payload = {
+      baseline_weight_kg: document.getElementById('scr-weight').value ? Number(document.getElementById('scr-weight').value) : null,
+      height_cm: document.getElementById('scr-height').value ? Number(document.getElementById('scr-height').value) : null,
+      target_weight_kg: document.getElementById('scr-target').value ? Number(document.getElementById('scr-target').value) : null,
+      contraindications: CONTRA.filter(function (c) { return scrContra[c.k]; }).map(function (c) { return c.k; }),
+      conditions: CONDITIONS.filter(function (c, i) { return scrConditions[i]; }),
+      medications: document.getElementById('scr-medications').value || null,
+      allergy_history: document.getElementById('scr-allergy').value || null,
+    };
+    btn.disabled = true;
+    btn.textContent = 'กำลังส่ง...';
+    gasRun()
+      .withSuccessHandler(function () {
+        document.getElementById('screening-form').classList.add('hidden');
+        document.getElementById('screening-done').classList.remove('hidden');
+      })
+      .withFailureHandler(function (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'ส่งแบบประเมิน';
+      })
+      .liffSubmitScreening(idToken, payload);
+  }
+
+  // ===================== บันทึกอาการข้างเคียง (symptoms) =====================
+  var SYMPTOMS = null;
+  var symptomState = {};
+
+  function initSymptomsView() {
+    if (SYMPTOMS) { renderSymptoms(); return; }
+    gasRun().withSuccessHandler(function (data) {
+      SYMPTOMS = data;
+      renderSymptoms();
+    }).withFailureHandler(function (e) { showError(e.message); }).liffGetSymptomCatalog();
+  }
+
+  function renderSymptoms() {
+    var html = '';
+    SYMPTOMS.forEach(function (s) {
+      html += '<div class="rounded-xl2 border bg-white p-3 transition-colors" id="sym-row-' + s.key + '" style="border-color:#E7E3DC">'
+        + '<div class="flex items-center justify-between">'
+        + '<button onclick="toggleSymptom(\'' + s.key + '\')" class="flex items-center gap-2 text-left">'
+        + '<span class="flex h-5 w-5 items-center justify-center rounded-full border text-xs" id="sym-check-' + s.key + '" style="border-color:#E7E3DC;background:#fff;color:#fff"></span>'
+        + '<span class="text-[14.5px]">' + s.label_th + '</span>'
+        + (s.red_flag ? '<span class="text-xs text-coral">(แจ้งคลินิกทันทีถ้าเลือก)</span>' : '')
+        + '</button></div>'
+        + '<div class="mt-2 hidden gap-2 flex" id="sym-sevwrap-' + s.key + '">'
+        + ['low', 'mid', 'high'].map(function (lvl) {
+            return '<button onclick="setSeverity(\'' + s.key + '\',\'' + lvl + '\')" class="fchip" id="sym-sev-' + s.key + '-' + lvl + '">' + SEV[lvl].label + '</button>';
+          }).join('')
+        + '</div></div>';
+    });
+    document.getElementById('symptoms-list').innerHTML = html;
+  }
+
+  function toggleSymptom(key) {
+    if (symptomState[key]) { delete symptomState[key]; } else { symptomState[key] = 'mid'; }
+    var row = document.getElementById('sym-row-' + key);
+    var check = document.getElementById('sym-check-' + key);
+    var sevWrap = document.getElementById('sym-sevwrap-' + key);
+    var on = !!symptomState[key];
+    row.style.borderColor = on ? '#13837B' : '#E7E3DC';
+    check.style.borderColor = on ? '#13837B' : '#E7E3DC';
+    check.style.background = on ? '#13837B' : '#fff';
+    check.textContent = on ? '✓' : '';
+    sevWrap.classList.toggle('hidden', !on);
+    if (on) setSeverity(key, 'mid');
+    renderSymptomSubmitState();
+  }
+
+  function setSeverity(key, lvl) {
+    symptomState[key] = lvl;
+    ['low', 'mid', 'high'].forEach(function (l) {
+      var el = document.getElementById('sym-sev-' + key + '-' + l);
+      if (l === lvl) {
+        el.style.background = SEV[l].bg; el.style.color = SEV[l].fg; el.style.borderColor = SEV[l].fg;
+      } else {
+        el.style.background = ''; el.style.color = ''; el.style.borderColor = '';
+      }
+    });
+    renderSymptomSubmitState();
+  }
+
+  function renderSymptomSubmitState() {
+    var otherText = document.getElementById('sym-other').value;
+    var hasAny = Object.keys(symptomState).length > 0 || !!otherText;
+    document.getElementById('sym-submit').disabled = !hasAny;
+    var hasRedFlag = SYMPTOMS && SYMPTOMS.some(function (s) { return s.red_flag && symptomState[s.key]; });
+    document.getElementById('sym-redflag-warn').classList.toggle('hidden', !hasRedFlag);
+  }
+
+  function submitSymptoms() {
+    var errEl = document.getElementById('sym-error');
+    errEl.classList.add('hidden');
+    var btn = document.getElementById('sym-submit');
+    var entries = Object.keys(symptomState).map(function (k) { return { symptom_key: k, severity: symptomState[k] }; });
+    var payload = { entries: entries, other_text: document.getElementById('sym-other').value || null };
+    btn.disabled = true;
+    btn.textContent = 'กำลังบันทึก...';
+    gasRun()
+      .withSuccessHandler(function (data) {
+        document.getElementById('symptoms-form').classList.add('hidden');
+        document.getElementById('symptoms-done').classList.remove('hidden');
+        document.getElementById('symptoms-done-msg').className = 'text-sm leading-relaxed ' + (data.red_flag ? 'text-coral' : 'text-muted');
+        document.getElementById('symptoms-done-msg').textContent = data.red_flag
+          ? 'ระบบได้แจ้งเจ้าหน้าที่คลินิกเกี่ยวกับอาการของคุณแล้ว หากมีอาการรุนแรงมากหรือฉุกเฉิน กรุณาติดต่อคลินิกหรือไปโรงพยาบาลทันที'
+          : 'ขอบคุณที่แจ้งอาการนะคะ ทีมแพทย์จะติดตามให้';
+      })
+      .withFailureHandler(function (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'บันทึกอาการ';
+      })
+      .liffSubmitSymptoms(idToken, payload);
+  }
+
+  // ===================== ความคืบหน้าของฉัน (progress) =====================
+  var progData = null;
+  var progMetric = 'weight';
+  var progChartMode = 'measurements'; // 'measurements' | 'waist'
+  var progChart = null;
+  var METRICS = {
+    weight: { label: 'น้ำหนัก', unit: 'kg', key: 'weight_kg', targetable: true },
+    fat_pct: { label: 'ไขมัน %', unit: '%', key: 'body_fat_percent', targetable: false },
+    fat_mass: { label: 'มวลไขมัน', unit: 'kg', key: 'fat_mass_kg', targetable: false },
+  };
+  var BODY_PARTS = [
+    { key: 'waist_cm', label: 'รอบเอว' },
+    { key: 'chest_cm', label: 'รอบอก' },
+    { key: 'hip_cm', label: 'รอบสะโพก' },
+    { key: 'thigh_cm', label: 'รอบต้นขา' },
+  ];
+
+  function loadProgress() {
+    document.getElementById('prog-loading').classList.remove('hidden');
+    document.getElementById('prog-content').classList.add('hidden');
+    gasRun().withSuccessHandler(function (data) {
+      progData = data;
+      document.getElementById('prog-loading').classList.add('hidden');
+      document.getElementById('prog-content').classList.remove('hidden');
+      renderProgress();
+    }).withFailureHandler(function (e) { showError(e.message); }).liffGetProgress(idToken);
+  }
+
+  function renderProgress() {
+    document.getElementById('prog-hn').textContent = progData.patient.hn;
+
+    var withWeight = progData.measurements.filter(function (m) { return m.weight_kg != null; });
+    var current = withWeight.length > 0 ? withWeight[withWeight.length - 1].weight_kg : null;
+    var baseline = progData.baseline_weight_kg != null ? progData.baseline_weight_kg : (withWeight.length > 0 ? withWeight[0].weight_kg : null);
+    var lost = (current != null && baseline != null) ? Math.round((baseline - current) * 10) / 10 : null;
+
+    document.getElementById('prog-current').textContent = current != null ? current.toFixed(1) : '—';
+    var lostWrap = document.getElementById('prog-lost-wrap');
+    if (lost != null) {
+      lostWrap.classList.remove('hidden');
+      document.getElementById('prog-lost').textContent = (lost > 0 ? '-' + lost : lost) + ' kg';
+    } else {
+      lostWrap.classList.add('hidden');
+    }
+
+    var targetRow = document.getElementById('prog-target-row');
+    if (progData.target_weight_kg) {
+      targetRow.classList.remove('hidden');
+      document.getElementById('prog-target').textContent = progData.target_weight_kg;
+    } else {
+      targetRow.classList.add('hidden');
+    }
+
+    var doseRow = document.getElementById('prog-dose-row');
+    if (progData.current_dose) {
+      doseRow.classList.remove('hidden');
+      var med = MEDICATION[progData.current_dose.medication];
+      var medChip = med ? '<span style="background:' + med.bg + ';color:' + med.fg + '" class="ml-1 rounded-full px-2 py-0.5 text-[11px] font-medium">' + med.label + '</span>' : '';
+      var txt = 'ขนาดยาปัจจุบัน: <span class="num">' + progData.current_dose.dose_mg + ' mg</span>' + medChip;
+      if (progData.current_dose.next_dose_date) txt += ' · นัดฉีดถัดไป ' + fmtDate(progData.current_dose.next_dose_date);
+      doseRow.innerHTML = txt;
+    } else {
+      doseRow.classList.add('hidden');
+    }
+
+    // metric chips
+    var chipsHtml = '';
+    Object.keys(METRICS).forEach(function (key) {
+      var on = progChartMode === 'measurements' && progMetric === key;
+      chipsHtml += '<button onclick="setProgMetric(\'' + key + '\')" class="chip ' + (on ? 'on' : '') + '">' + METRICS[key].label + '</button>';
+    });
+    chipsHtml += '<button onclick="setProgChartMode(\'waist\')" class="chip ' + (progChartMode === 'waist' ? 'on' : '') + '">รอบเอว</button>';
+    document.getElementById('prog-metric-chips').innerHTML = chipsHtml;
+
+    // body measure deltas
+    var bm = progData.body_measures || [];
+    var bmWrap = document.getElementById('prog-body-measures');
+    if (bm.length > 0) {
+      bmWrap.classList.remove('hidden');
+      var html = '';
+      BODY_PARTS.forEach(function (part) {
+        var first = bm.find(function (b) { return b[part.key] != null; });
+        var last = null;
+        for (var i = bm.length - 1; i >= 0; i--) { if (bm[i][part.key] != null) { last = bm[i]; break; } }
+        if (!first || !last) return;
+        var delta = Math.round((first[part.key] - last[part.key]) * 10) / 10;
+        var deltaHtml = '';
+        if (delta !== 0) {
+          deltaHtml = '<span class="ml-2 ' + (delta > 0 ? 'text-teal' : 'text-coral') + '">(' + (delta > 0 ? '-' : '+') + Math.abs(delta) + ')</span>';
+        }
+        html += '<div class="flex items-center justify-between text-sm"><span class="text-muted">' + part.label + '</span><span class="num">' + last[part.key] + ' cm' + deltaHtml + '</span></div>';
+      });
+      document.getElementById('prog-body-measures-list').innerHTML = html;
+    } else {
+      bmWrap.classList.add('hidden');
+    }
+
+    renderProgChart();
+  }
+
+  function setProgMetric(key) { progMetric = key; progChartMode = 'measurements'; renderProgress(); }
+  function setProgChartMode(mode) { progChartMode = mode; renderProgress(); }
+
+  function renderProgChart() {
+    var labels = [], values = [], colors = [];
+    if (progChartMode === 'waist') {
+      progData.body_measures.forEach(function (b) {
+        if (b.waist_cm == null) return;
+        labels.push(fmtDate(b.measured_at)); values.push(b.waist_cm); colors.push('#13837B');
+      });
+    } else {
+      var m = METRICS[progMetric];
+      progData.measurements.forEach(function (row) {
+        if (row[m.key] == null) return;
+        labels.push(fmtDate(row.measured_at)); values.push(row[m.key]);
+        colors.push(row.source === 'bia_ocr' ? '#D9785F' : '#13837B');
+      });
+    }
+
+    var canvas = document.getElementById('prog-chart');
+    var empty = document.getElementById('prog-empty');
+    if (values.length === 0) {
+      empty.classList.remove('hidden');
+      canvas.classList.add('hidden');
+      if (progChart) { progChart.destroy(); progChart = null; }
+      return;
+    }
+    empty.classList.add('hidden');
+    canvas.classList.remove('hidden');
+
+    var datasets = [{
+      label: METRICS[progMetric] ? METRICS[progMetric].label : 'รอบเอว',
+      data: values,
+      borderColor: '#13837B',
+      backgroundColor: 'rgba(19,131,123,0.15)',
+      pointBackgroundColor: colors,
+      pointBorderColor: '#fff',
+      pointRadius: 3.5,
+      fill: true,
+      tension: 0.35,
+    }];
+    if (progChartMode === 'measurements' && progMetric === 'weight' && progData.target_weight_kg) {
+      datasets.push({
+        label: 'เป้าหมาย',
+        data: labels.map(function () { return progData.target_weight_kg; }),
+        borderColor: '#D9785F',
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: false,
+      });
+    }
+
+    if (progChart) progChart.destroy();
+    progChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 11 }, color: '#8C938E' }, grid: { display: false } },
+          y: { ticks: { font: { size: 11 }, color: '#8C938E' }, grid: { color: '#E7E3DC' } },
+        },
+      },
+    });
+  }
+</script>
+</body>
+</html>
